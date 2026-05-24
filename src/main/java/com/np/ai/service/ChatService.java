@@ -6,6 +6,8 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -15,26 +17,25 @@ public class ChatService {
 
     private final ChatClient geminiChatClient;
 
+    @Value("classapth:/prompts/user-prompt.st")
+    private Resource userPrompt;
+
+    @Value("classath:/prompts/system-prompt.st")
+    private Resource systemPrompt;
+
 
     public ChatService(@Qualifier("geminiChatClient") ChatClient chatClient){
         this.geminiChatClient = chatClient;
     }
 
     public String getLLMResponse(String query){
+        return geminiChatClient
+                .prompt(query)
+                .system(systemPrompt)
+                .user(userPrompt)
+                .call()
+                .content();
 
-        Message systemMessage = SystemPromptTemplate.builder()
-                .template("you are helpful coding assistant. You are expert in coding.")
-                .build().createMessage();
-        Message userMessage = PromptTemplate.builder()
-                .template("What is {techName} ? and tell me about {techExample}")
-                .build().createMessage(Map.of(
-                        "techName", "spring",
-                        "techExample", "spring boot"
-                ));
-
-        Prompt prompt = new Prompt(systemMessage, userMessage);
-
-        return geminiChatClient.prompt(prompt).call().content();
     }
 
 }
