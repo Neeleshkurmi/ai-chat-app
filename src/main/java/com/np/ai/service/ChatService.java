@@ -1,6 +1,7 @@
 package com.np.ai.service;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -17,10 +18,10 @@ public class ChatService {
 
     private final ChatClient geminiChatClient;
 
-    @Value("classapth:/prompts/user-prompt.st")
+    @Value("classpath:/prompts/user-prompt.st")
     private Resource userPrompt;
 
-    @Value("classath:/prompts/system-prompt.st")
+    @Value("classpath:/prompts/system-prompt.st")
     private Resource systemPrompt;
 
 
@@ -31,8 +32,9 @@ public class ChatService {
     public String getLLMResponse(String query){
         return geminiChatClient
                 .prompt(query)
-                .system(systemPrompt)
-                .user(userPrompt)
+                .advisors(new SimpleLoggerAdvisor())
+                .system(this.systemPrompt)
+                .user(this.userPrompt)
                 .call()
                 .content();
 
