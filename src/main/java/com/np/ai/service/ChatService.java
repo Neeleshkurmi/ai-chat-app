@@ -3,24 +3,22 @@ package com.np.ai.service;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SafeGuardAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 import javax.annotation.PostConstruct;
 import java.nio.file.Files;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class ChatService {
 
     private final ChatClient geminiChatClient;
+
+    private final ChatClient openAiChatClient;
 
     @Value("classpath:/prompts/user-prompt.st")
     private Resource userPrompt;
@@ -41,19 +39,37 @@ public class ChatService {
     }
 
 
-    public ChatService(@Qualifier("geminiChatClient") ChatClient chatClient){
-        this.geminiChatClient = chatClient;
+    public ChatService(@Qualifier("geminiChatClient") ChatClient geminichatClient, @Qualifier("ollamaChatClient") ChatClient openAiChatClient){
+        this.geminiChatClient = geminichatClient;
+        this.openAiChatClient = openAiChatClient;
     }
 
     public String getLLMResponse(String query){
-        return geminiChatClient
+        return openAiChatClient
                 .prompt(query)
-                .advisors(new SimpleLoggerAdvisor(), new SafeGuardAdvisor(abusiveWords))
-                .system(this.systemPrompt)
-                .user(this.userPrompt)
+                .advisors(
+                        new SimpleLoggerAdvisor(),
+                        new SafeGuardAdvisor(abusiveWords)
+                )
+                .system(system -> system.text(this.systemPrompt))
+                .user(user -> user.text(this.userPrompt))
                 .call()
                 .content();
 
     }
+
+    public Flux<String> streamChat(String query){
+        return openAiChatClient
+                .prompt(query)
+                .advisors(
+                        new SimpleLoggerAdvisor(),
+                        new SafeGuardAdvisor(abusiveWords)
+                )
+                .system(system -> system.text(this.systemPrompt))
+                .user(user -> user.text(this.userPrompt))
+                .stream()
+                .content();
+    }
+
 
 }

@@ -2,13 +2,13 @@ package com.np.ai.controller;
 
 import com.np.ai.service.ChatService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
 
 @RestController
 @RequestMapping
@@ -19,7 +19,13 @@ public class ChatController {
 
 
     @GetMapping("/chat")
-    public String chat(@RequestParam(value = "q", required = true) String q){
-        return chatService.getLLMResponse(q);
+    public ResponseEntity<String> chat(@RequestParam(value = "q", required = true) String q){
+        return new ResponseEntity<>(chatService.getLLMResponse(q), HttpStatus.OK);
     }
+
+    @GetMapping("/stream-chat")
+    public Flux<String> streamChat(@RequestParam(value = "q", required = true) String q){
+        return chatService.streamChat(q);
+    }
+
 }
