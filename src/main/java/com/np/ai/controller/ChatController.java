@@ -19,8 +19,9 @@ public class ChatController {
 
 
     @GetMapping("/chat")
-    public ResponseEntity<String> chat(@RequestParam(value = "q", required = true) String q){
-        return new ResponseEntity<>(chatService.getLLMResponse(q), HttpStatus.OK);
+    public ResponseEntity<String> chat(@RequestParam(value = "q") String query,
+                                       @RequestParam(value = "id") String userId){
+        return new ResponseEntity<>(chatService.getLLMResponse(query, userId), HttpStatus.OK);
     }
 
     @GetMapping("/stream-chat")

@@ -1,12 +1,16 @@
 package com.np.ai.service;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SafeGuardAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import java.util.Map;
+import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 import reactor.core.publisher.Flux;
 
 import javax.annotation.PostConstruct;
@@ -17,6 +21,8 @@ import java.util.List;
 public class ChatService {
 
     private final ChatClient geminiChatClient;
+
+    private final MessageChatMemoryAdvisor chatMemoryAdvisor;
 
     private final ChatClient openAiChatClient;
 
@@ -39,20 +45,26 @@ public class ChatService {
     }
 
 
-    public ChatService(@Qualifier("geminiChatClient") ChatClient geminichatClient, @Qualifier("ollamaChatClient") ChatClient openAiChatClient){
+    public ChatService(
+            @Qualifier("geminiChatClient") ChatClient geminichatClient,
+            @Qualifier("openAiChatClient") ChatClient openAiChatClient,
+            ChatMemory chatMemory){
+        this.chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
         this.geminiChatClient = geminichatClient;
         this.openAiChatClient = openAiChatClient;
     }
 
-    public String getLLMResponse(String query){
+    public String getLLMResponse(String query, String userId){
         return openAiChatClient
-                .prompt(query)
+                .prompt()
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, userId))
                 .advisors(
+                        chatMemoryAdvisor,
                         new SimpleLoggerAdvisor(),
                         new SafeGuardAdvisor(abusiveWords)
                 )
                 .system(system -> system.text(this.systemPrompt))
-                .user(user -> user.text(this.userPrompt))
+                .user(query)
                 .call()
                 .content();
 
@@ -60,13 +72,13 @@ public class ChatService {
 
     public Flux<String> streamChat(String query){
         return openAiChatClient
-                .prompt(query)
+                .prompt()
                 .advisors(
                         new SimpleLoggerAdvisor(),
                         new SafeGuardAdvisor(abusiveWords)
                 )
                 .system(system -> system.text(this.systemPrompt))
-                .user(user -> user.text(this.userPrompt))
+                .user(query)
                 .stream()
                 .content();
     }
