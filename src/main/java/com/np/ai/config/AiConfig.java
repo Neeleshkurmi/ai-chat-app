@@ -12,10 +12,10 @@ public class AiConfig {
 
     @Bean("geminiChatClient")
     public ChatClient geminiChatClient(GoogleGenAiChatModel chatModel) {
-        return ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor())
+        return ChatClient.builder(chatModel)
                 .defaultOptions(
                 GoogleGenAiChatOptions.builder()
-                        .maxOutputTokens(200).build()
+                        .maxOutputTokens(600).build()
         ).build();
     }
 }
