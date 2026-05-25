@@ -4,6 +4,12 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+.mvn
+pom.xml
+HELP.md
+mvnw.cmd
+src/main/resources/application.yaml
+
 ### STS ###
 .apt_generated
 .classpath
