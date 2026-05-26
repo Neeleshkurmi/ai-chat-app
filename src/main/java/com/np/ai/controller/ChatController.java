@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping
 @RequiredArgsConstructor
@@ -18,7 +20,7 @@ public class ChatController {
     private final ChatService chatService;
 
 
-    @GetMapping("/chat")
+    @GetMapping("/")
     public ResponseEntity<String> chat(@RequestParam(value = "q") String query,
                                        @RequestParam(value = "id") String userId){
         return new ResponseEntity<>(chatService.getLLMResponse(query, userId), HttpStatus.OK);
@@ -27,6 +29,12 @@ public class ChatController {
     @GetMapping("/stream-chat")
     public Flux<String> streamChat(@RequestParam(value = "q", required = true) String q){
         return chatService.streamChat(q);
+    }
+
+    @GetMapping("/new-chat")
+    public ResponseEntity<String> createNewChat(@RequestParam(value = "q") String query){
+        UUID chatId = UUID.randomUUID();
+        return new ResponseEntity<>(chatService.getLLMResponse(query, chatId.toString()), HttpStatus.CREATED);
     }
 
 }
