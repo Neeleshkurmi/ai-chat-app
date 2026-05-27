@@ -1,6 +1,10 @@
 package com.np.ai.controller;
 
+import com.np.ai.dto.NewChatResponse;
 import com.np.ai.service.ChatService;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,10 +24,11 @@ public class ChatController {
     private final ChatService chatService;
 
 
-    @GetMapping("/")
-    public ResponseEntity<String> chat(@RequestParam(value = "q") String query,
-                                       @RequestParam(value = "id") String userId){
-        return new ResponseEntity<>(chatService.getLLMResponse(query, userId), HttpStatus.OK);
+    @GetMapping("c/")
+    public ResponseEntity<NewChatResponse> chat(@RequestParam(value = "q") String query,
+                                       @RequestParam(value = "id") UUID chatId){
+        NewChatResponse response = new NewChatResponse(chatId, chatService.getLLMResponse(query, chatId.toString()));
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping("/stream-chat")
@@ -31,10 +36,11 @@ public class ChatController {
         return chatService.streamChat(q);
     }
 
-    @GetMapping("/new-chat")
-    public ResponseEntity<String> createNewChat(@RequestParam(value = "q") String query){
+    @GetMapping("c/new-chat")
+    public ResponseEntity<NewChatResponse> createNewChat(@RequestParam(value = "q") String query){
         UUID chatId = UUID.randomUUID();
-        return new ResponseEntity<>(chatService.getLLMResponse(query, chatId.toString()), HttpStatus.CREATED);
+        NewChatResponse response = new NewChatResponse(chatId, chatService.getLLMResponse(query, chatId.toString()));
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
 }

@@ -5,6 +5,9 @@ import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SafeGuardAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -18,6 +21,8 @@ import java.util.List;
 public class ChatService {
 
     private final ChatClient geminiChatClient;
+
+    private final VectorStore vectorStore;
 
     private final MessageChatMemoryAdvisor chatMemoryAdvisor;
 
@@ -45,13 +50,27 @@ public class ChatService {
     public ChatService(
             @Qualifier("geminiChatClient") ChatClient geminichatClient,
             @Qualifier("openAiChatClient") ChatClient openAiChatClient,
-            ChatMemory chatMemory){
+            ChatMemory chatMemory, VectorStore vectorStore){
+        this.vectorStore = vectorStore;
         this.chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
         this.geminiChatClient = geminichatClient;
         this.openAiChatClient = openAiChatClient;
     }
 
+
+
     public String getLLMResponse(String query, String userId){
+
+        SearchRequest searchRequest = SearchRequest.builder()
+                .topK(3)
+                .similarityThreshold(0.6)
+                .query(query)
+                .build();
+
+        List<Document> documents = vectorStore.similaritySearch(searchRequest);
+        List<String> documentList = documents.stream().map(Document::getText).toList();
+        String contextData = String.join(",", documentList);
+
         return openAiChatClient
                 .prompt()
                 .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, userId))
@@ -60,8 +79,8 @@ public class ChatService {
                         new SimpleLoggerAdvisor(),
                         new SafeGuardAdvisor(abusiveWords)
                 )
-                .system(system -> system.text(this.systemPrompt))
-                .user(query)
+                .system(system -> system.text(this.systemPrompt).param("context", contextData))
+                .user(user -> user.param("query", query))
                 .call()
                 .content();
 
