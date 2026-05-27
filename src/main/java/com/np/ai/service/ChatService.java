@@ -76,7 +76,7 @@ public class ChatService {
 
         List<Document> documents = vectorStore.similaritySearch(searchRequest);
         List<String> documentList = documents.stream().map(Document::getText).toList();
-        String contextData = String.join(",", documentList);
+        String contextData = String.join("\n\n", documentList);
 
         return openAiChatClient
                 .prompt()
