@@ -24,7 +24,7 @@ public class ChatController {
     private final ChatService chatService;
 
 
-    @GetMapping("c/")
+    @GetMapping("c")
     public ResponseEntity<NewChatResponse> chat(@RequestParam(value = "q") String query,
                                        @RequestParam(value = "id") UUID chatId){
         NewChatResponse response = new NewChatResponse(chatId, chatService.getLLMResponse(query, chatId.toString()));

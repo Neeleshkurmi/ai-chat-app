@@ -28,6 +28,8 @@ public class ChatService {
 
     private final ChatClient openAiChatClient;
 
+    private final ChatMemory chatMemory;
+
     @Value("classpath:/prompts/user-prompt.st")
     private Resource userPrompt;
 
@@ -55,6 +57,7 @@ public class ChatService {
         this.chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
         this.geminiChatClient = geminichatClient;
         this.openAiChatClient = openAiChatClient;
+        this.chatMemory = chatMemory;
     }
 
 
@@ -67,20 +70,29 @@ public class ChatService {
                 .query(query)
                 .build();
 
+        MessageChatMemoryAdvisor memoryAdvisor =
+                MessageChatMemoryAdvisor.builder(chatMemory)
+                        .build();
+
         List<Document> documents = vectorStore.similaritySearch(searchRequest);
         List<String> documentList = documents.stream().map(Document::getText).toList();
         String contextData = String.join(",", documentList);
 
         return openAiChatClient
                 .prompt()
-                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, userId))
                 .advisors(
-                        chatMemoryAdvisor,
+                        memoryAdvisor,
                         new SimpleLoggerAdvisor(),
                         new SafeGuardAdvisor(abusiveWords)
                 )
-                .system(system -> system.text(this.systemPrompt).param("context", contextData))
-                .user(user -> user.param("query", query))
+                .advisors(a -> a
+                        .param(ChatMemory.CONVERSATION_ID, userId))
+                .system(system -> system
+                        .text(this.systemPrompt)
+                        .param("context", contextData))
+                .user(user -> user
+                        .text(userPrompt)
+                        .param("query", query))
                 .call()
                 .content();
 
