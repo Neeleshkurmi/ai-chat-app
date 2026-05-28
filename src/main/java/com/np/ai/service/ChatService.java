@@ -1,7 +1,10 @@
 package com.np.ai.service;
 
 import com.np.ai.dto.ChatRequest;
+import com.np.ai.dto.ChatResponse;
 import com.np.ai.dto.NewChatResponse;
+import com.np.ai.entity.Chat;
+import com.np.ai.template.NewChatResponseTemplate;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SafeGuardAdvisor;
@@ -116,6 +119,21 @@ public class ChatService {
 
 
     public NewChatResponse createNewChat(UUID chatId, ChatRequest chatRequest) {
+        String response = getLLMResponse(chatId.toString(), chatRequest.getQuery());
 
+        String title = chatRequest.getQuery().substring(15);
+
+        NewChatResponse chatResponse = new NewChatResponse();
+        chatResponse.setChatId(chatId);
+        chatResponse.setTitle(title);
+        chatResponse.setResponse(response);
+
+        return chatResponse;
     }
+
+//    public ChatResponse getChatResponse(String chatId, String query) {
+//        String response = getLLMResponse(chatId, query);
+//
+//
+//    }
 }

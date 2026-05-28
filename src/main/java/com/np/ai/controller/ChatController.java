@@ -1,6 +1,7 @@
 package com.np.ai.controller;
 
 import com.np.ai.dto.ChatRequest;
+import com.np.ai.dto.ChatResponse;
 import com.np.ai.dto.NewChatResponse;
 import com.np.ai.service.ChatService;
 import lombok.AllArgsConstructor;
@@ -24,16 +25,15 @@ public class ChatController {
     @PostMapping("/c")
     public ResponseEntity<NewChatResponse> createNewChat(@RequestBody ChatRequest chatRequest){
         UUID chatId = UUID.randomUUID();
-
-        var response = chatService.createNewChat(chatId, chatRequest);
-
+        NewChatResponse response = chatService.createNewChat(chatId, chatRequest);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-
-
-
-
+//    @PostMapping("/c/{chatId}")
+//    public ResponseEntity<ChatResponse> getChatResponse(
+//            @PathVariable UUID chatId , @RequestBody ChatRequest chatRequest){
+//        return new ResponseEntity<>(chatService.getChatResponse(chatId.toString(), chatRequest.getQuery()), HttpStatus.OK);
+//    }
 
 
 
@@ -42,7 +42,8 @@ public class ChatController {
     @GetMapping("c")
     public ResponseEntity<NewChatResponse> chat(@RequestParam(value = "q") String query,
                                        @RequestParam(value = "id") UUID chatId){
-        NewChatResponse response = new NewChatResponse(chatId, chatService.getLLMResponse(query, chatId.toString()));
+        String title = query.substring(15);
+        NewChatResponse response = new NewChatResponse(chatId, title, chatService.getLLMResponse(query, chatId.toString()));
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -54,7 +55,8 @@ public class ChatController {
     @GetMapping("c/new-chat")
     public ResponseEntity<NewChatResponse> createNewChat(@RequestParam(value = "q") String query){
         UUID chatId = UUID.randomUUID();
-        NewChatResponse response = new NewChatResponse(chatId, chatService.getLLMResponse(query, chatId.toString()));
+        String title = query.substring(15);
+        NewChatResponse response = new NewChatResponse(chatId, title, chatService.getLLMResponse(query, chatId.toString()));
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
