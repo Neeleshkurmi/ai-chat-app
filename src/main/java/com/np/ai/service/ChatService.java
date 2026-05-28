@@ -1,5 +1,7 @@
 package com.np.ai.service;
 
+import com.np.ai.dto.ChatRequest;
+import com.np.ai.dto.NewChatResponse;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SafeGuardAdvisor;
@@ -16,6 +18,7 @@ import reactor.core.publisher.Flux;
 import javax.annotation.PostConstruct;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class ChatService {
@@ -112,4 +115,7 @@ public class ChatService {
     }
 
 
+    public NewChatResponse createNewChat(UUID chatId, ChatRequest chatRequest) {
+
+    }
 }

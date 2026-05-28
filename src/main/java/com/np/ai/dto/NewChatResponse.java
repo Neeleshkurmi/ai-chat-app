@@ -9,6 +9,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class NewChatResponse{
-    UUID chatId;
-    String response;
+    private UUID chatId;
+    private String title;
+    private String response;
 }

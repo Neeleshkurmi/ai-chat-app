@@ -1,5 +1,6 @@
 package com.np.ai.controller;
 
+import com.np.ai.dto.ChatRequest;
 import com.np.ai.dto.NewChatResponse;
 import com.np.ai.service.ChatService;
 import lombok.AllArgsConstructor;
@@ -8,20 +9,34 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 import java.util.UUID;
 
 @RestController
-@RequestMapping
+@RequestMapping("/chat")
 @RequiredArgsConstructor
 public class ChatController {
 
     private final ChatService chatService;
+
+    @PostMapping("/c")
+    public ResponseEntity<NewChatResponse> createNewChat(@RequestBody ChatRequest chatRequest){
+        UUID chatId = UUID.randomUUID();
+
+        var response = chatService.createNewChat(chatId, chatRequest);
+
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+
+
+
+
+
+
+
 
 
     @GetMapping("c")
