@@ -14,5 +14,5 @@ import java.util.UUID;
 public class NewChatResponse{
     private UUID chatId;
     private String title;
-    private ChatMessage content;
+    private MessageResponse message;
 }

@@ -30,7 +30,7 @@ public class ChatController {
 
     @PostMapping("/c/{chatId}")
     public ResponseEntity<ChatResponse> getChatResponse(
-            @PathVariable UUID chatId ,
+            @PathVariable UUID chatId,
             @RequestBody ChatRequest chatRequest,
             @AuthenticationPrincipal User user){
         return new ResponseEntity<>(chatService.getChatResponse(chatId, chatRequest, user), HttpStatus.OK);
