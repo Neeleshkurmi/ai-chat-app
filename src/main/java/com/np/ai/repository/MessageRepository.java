@@ -7,9 +7,9 @@ import org.springframework.stereotype.Repository;
 import java.util.UUID;
 
 @Repository
-public interface MessageRepository extends JpaRepository<UUID, ChatMessage> {
-
-    ChatMessage findAll(UUID chatId);
-
-    ChatMessage findById(UUID chatId, int limit, int offset);
+public interface MessageRepository extends JpaRepository<ChatMessage, UUID> {
+//
+//    ChatMessage findAll(UUID chatId);
+//
+//    ChatMessage findById(UUID chatId, int limit, int offset);
 }

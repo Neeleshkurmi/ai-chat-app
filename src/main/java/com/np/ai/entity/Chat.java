@@ -21,11 +21,4 @@ public class Chat extends BaseEntity{
     private User user;
 
     private String title;
-
-    @OneToMany(
-            mappedBy = "chat",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
-    private List<ChatMessage> messages;
 }

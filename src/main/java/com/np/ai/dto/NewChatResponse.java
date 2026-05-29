@@ -1,5 +1,6 @@
 package com.np.ai.dto;
 
+import com.np.ai.entity.ChatMessage;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,5 +14,5 @@ import java.util.UUID;
 public class NewChatResponse{
     private UUID chatId;
     private String title;
-    private String response;
+    private ChatMessage content;
 }

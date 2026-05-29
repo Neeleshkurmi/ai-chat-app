@@ -4,136 +4,76 @@ import com.np.ai.dto.ChatRequest;
 import com.np.ai.dto.ChatResponse;
 import com.np.ai.dto.NewChatResponse;
 import com.np.ai.entity.Chat;
-import com.np.ai.template.NewChatResponseTemplate;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.SafeGuardAdvisor;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
+import com.np.ai.entity.ChatMessage;
+import com.np.ai.entity.MessageRole;
+import com.np.ai.entity.User;
+import com.np.ai.repository.ChatRepository;
+import com.np.ai.repository.MessageRepository;
+import com.np.ai.repository.UserRepository;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
-import javax.annotation.PostConstruct;
-import java.nio.file.Files;
-import java.util.List;
+
 import java.util.UUID;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class ChatService {
 
-    private final ChatClient geminiChatClient;
+    private final LlmService llmService;
+    private final ChatRepository chatRepository;
+    private final MessageRepository messageRepository;
+    private final UserRepository userRepository;
 
-    private final VectorStore vectorStore;
 
-    private final MessageChatMemoryAdvisor chatMemoryAdvisor;
+    public NewChatResponse createNewChat(ChatRequest chatRequest, User user) {
 
-    private final ChatClient openAiChatClient;
+        log.info("new chat method called");
 
-    private final ChatMemory chatMemory;
+        log.info("creating new chat");
+        Chat chat = new Chat();
+        chat.setUser(user);
+        chat.setTitle(chatRequest.getQuery().substring(0, Math.min(chatRequest.getQuery().length(), 15)));
 
-    @Value("classpath:/prompts/user-prompt.st")
-    private Resource userPrompt;
+        log.info("saving the chat in repo");
+        Chat newChat = chatRepository.save(chat);
 
-    @Value("classpath:/prompts/system-prompt.st")
-    private Resource systemPrompt;
+        ChatResponse chatResponse = getChatResponse(newChat.getId(), chatRequest, user);
 
-    @Value("classpath:/prompts/abusive-words.st")
-    private Resource abusiveWordsResource;
+        log.info("creating chat response");
+        NewChatResponse response = new NewChatResponse();
+        response.setChatId(newChat.getId());
+        response.setTitle(newChat.getTitle());
+        response.setContent(chatResponse.getContent());
 
-    private List<String> abusiveWords;
-
-    @PostConstruct
-    public void init() throws Exception{
-        abusiveWords = Files.readAllLines(
-                abusiveWordsResource.getFile().toPath()
-        );
+        return response;
     }
 
+    public ChatResponse getChatResponse(UUID chatId, ChatRequest chatRequest, User user){
 
-    public ChatService(
-            @Qualifier("geminiChatClient") ChatClient geminichatClient,
-            @Qualifier("openAiChatClient") ChatClient openAiChatClient,
-            ChatMemory chatMemory, VectorStore vectorStore){
-        this.vectorStore = vectorStore;
-        this.chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
-        this.geminiChatClient = geminichatClient;
-        this.openAiChatClient = openAiChatClient;
-        this.chatMemory = chatMemory;
-    }
+        String response = llmService.getLLMResponse(chatRequest.getQuery(), chatId.toString());
 
+        Chat chat = chatRepository.findById(chatId).orElseThrow(()-> new RuntimeException("chat not found"));
 
+        ChatMessage userMessage = new ChatMessage();
+        userMessage.setRole(MessageRole.USER);
+        userMessage.setContent(chatRequest.getQuery());
+        userMessage.setChat(chat);
+        messageRepository.save(userMessage);
 
-    public String getLLMResponse(String query, String userId){
+        ChatMessage assistantMessage = new ChatMessage();
+        assistantMessage.setRole(MessageRole.ASSISTANT);
+        assistantMessage.setContent(response);
+        assistantMessage.setChat(chat);
 
-        SearchRequest searchRequest = SearchRequest.builder()
-                .topK(3)
-                .similarityThreshold(0.6)
-                .query(query)
-                .build();
+        ChatMessage savedMessage = messageRepository.save(assistantMessage);
 
-        MessageChatMemoryAdvisor memoryAdvisor =
-                MessageChatMemoryAdvisor.builder(chatMemory)
-                        .build();
-
-        List<Document> documents = vectorStore.similaritySearch(searchRequest);
-        List<String> documentList = documents.stream().map(Document::getText).toList();
-        String contextData = String.join("\n\n", documentList);
-
-        return openAiChatClient
-                .prompt()
-                .advisors(
-                        memoryAdvisor,
-                        new SimpleLoggerAdvisor(),
-                        new SafeGuardAdvisor(abusiveWords)
-                )
-                .advisors(a -> a
-                        .param(ChatMemory.CONVERSATION_ID, userId))
-                .system(system -> system
-                        .text(this.systemPrompt)
-                        .param("context", contextData))
-                .user(user -> user
-                        .text(userPrompt)
-                        .param("query", query))
-                .call()
-                .content();
-
-    }
-
-    public Flux<String> streamChat(String query){
-        return openAiChatClient
-                .prompt()
-                .advisors(
-                        new SimpleLoggerAdvisor(),
-                        new SafeGuardAdvisor(abusiveWords)
-                )
-                .system(system -> system.text(this.systemPrompt))
-                .user(query)
-                .stream()
-                .content();
-    }
-
-
-    public NewChatResponse createNewChat(UUID chatId, ChatRequest chatRequest) {
-        String response = getLLMResponse(chatId.toString(), chatRequest.getQuery());
-
-        String title = chatRequest.getQuery().substring(15);
-
-        NewChatResponse chatResponse = new NewChatResponse();
-        chatResponse.setChatId(chatId);
-        chatResponse.setTitle(title);
-        chatResponse.setResponse(response);
+        ChatResponse chatResponse = new ChatResponse();
+        chatResponse.setContent(savedMessage);
 
         return chatResponse;
     }
 
-//    public ChatResponse getChatResponse(String chatId, String query) {
-//        String response = getLLMResponse(chatId, query);
-//
-//
-//    }
 }
