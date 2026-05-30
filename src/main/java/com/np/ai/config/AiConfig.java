@@ -5,6 +5,7 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -25,5 +26,10 @@ public class AiConfig {
     @Bean("openAiChatClient")
     public ChatClient openAiChatClient(OpenAiChatModel chatModel, ChatMemory chatMemory){
         return ChatClient.builder(chatModel).build();
+    }
+
+    @Bean
+    public TokenTextSplitter tokenTextSplitter(){
+        return new TokenTextSplitter();
     }
 }

@@ -62,7 +62,7 @@ public class LlmService {
 
 
 
-    public String getLLMResponse(String query, String userId){
+    public String getLLMResponse(String query, String chatId){
 
         SearchRequest searchRequest = SearchRequest.builder()
                 .topK(3)
@@ -86,7 +86,7 @@ public class LlmService {
                         new SafeGuardAdvisor(abusiveWords)
                 )
                 .advisors(a -> a
-                        .param(ChatMemory.CONVERSATION_ID, userId))
+                        .param(ChatMemory.CONVERSATION_ID, chatId))
                 .system(system -> system
                         .text(this.systemPrompt)
                         .param("context", contextData))

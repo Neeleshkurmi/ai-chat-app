@@ -5,6 +5,7 @@ import com.np.ai.entity.Chat;
 import com.np.ai.entity.ChatMessage;
 import com.np.ai.entity.MessageRole;
 import com.np.ai.entity.User;
+import com.np.ai.ingestion.DataIngestion;
 import com.np.ai.repository.ChatRepository;
 import com.np.ai.repository.MessageRepository;
 import com.np.ai.repository.UserRepository;
@@ -16,7 +17,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -31,23 +34,24 @@ public class ChatService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
     private final MessageService messageService;
+    private final DataIngestion dataIngestion;
 
 
-    public NewChatResponse createNewChat(ChatRequest chatRequest, User user) {
+    public NewChatResponse createNewChat(String chatRequest, MultipartFile file ,User user) throws IOException {
 
         log.info("new chat method called");
 
         log.info("creating new chat");
         Chat chat = new Chat();
         chat.setUser(user);
-        chat.setTitle(chatRequest.getQuery().substring(0, Math.min(chatRequest.getQuery().length(), 50)));
+        chat.setTitle(chatRequest.substring(0, Math.min(chatRequest.length(), 50)));
 
         log.info("saving the chat in repo");
         Chat newChat = chatRepository.save(chat);
 
         log.info("creating chat response");
 
-        ChatResponse chatResponse = getChatResponse(newChat.getId(), chatRequest, user);
+        ChatResponse chatResponse = getChatResponse(newChat.getId(), file, chatRequest, user);
 
         NewChatResponse response = new NewChatResponse();
         response.setTitle(newChat.getTitle());
@@ -57,16 +61,20 @@ public class ChatService {
         return response;
     }
 
-    public ChatResponse getChatResponse(UUID chatId, ChatRequest chatRequest, User user){
+    public ChatResponse getChatResponse(UUID chatId, MultipartFile file, String chatRequest, User user) throws IOException {
 
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(()-> new RuntimeException("chat not found for id: "+chatId));
 
-        String response = llmService.getLLMResponse(chatRequest.getQuery(), chatId.toString());
+        if(file!=null){
+            dataIngestion.ingest(file, chatId);
+        }
+
+        String response = llmService.getLLMResponse(chatRequest, chatId.toString());
 
         ChatMessage userMessage = new ChatMessage();
         userMessage.setRole(MessageRole.USER);
-        userMessage.setContent(chatRequest.getQuery());
+        userMessage.setContent(chatRequest);
         userMessage.setChat(chat);
         messageRepository.save(userMessage);
 

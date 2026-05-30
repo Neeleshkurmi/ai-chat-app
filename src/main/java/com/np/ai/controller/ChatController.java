@@ -10,10 +10,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,18 +30,20 @@ public class ChatController {
 
     @PostMapping("/c")
     public ResponseEntity<NewChatResponse> createNewChat(
-            @RequestBody ChatRequest chatRequest,
-            @AuthenticationPrincipal User user){
-        NewChatResponse response = chatService.createNewChat(chatRequest, user);
+            @RequestParam(value = "q") String query,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @AuthenticationPrincipal User user) throws IOException {
+        NewChatResponse response = chatService.createNewChat(query, file ,user);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @PostMapping("/c/{chatId}")
     public ResponseEntity<ChatResponse> getChatResponse(
             @PathVariable UUID chatId,
-            @RequestBody ChatRequest chatRequest,
-            @AuthenticationPrincipal User user){
-        return new ResponseEntity<>(chatService.getChatResponse(chatId, chatRequest, user), HttpStatus.OK);
+            @RequestParam("q") String query,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @AuthenticationPrincipal User user) throws IOException {
+        return new ResponseEntity<>(chatService.getChatResponse(chatId, file, query, user), HttpStatus.OK);
     }
 
 
