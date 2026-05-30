@@ -1,16 +1,20 @@
 package com.np.ai.controller;
 
-import com.np.ai.dto.ChatRequest;
-import com.np.ai.dto.ChatResponse;
-import com.np.ai.dto.NewChatResponse;
+import com.np.ai.dto.*;
+import com.np.ai.entity.Chat;
 import com.np.ai.entity.User;
 import com.np.ai.service.ChatService;
+import com.np.ai.service.MessageService;
+import jakarta.websocket.server.PathParam;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -19,6 +23,7 @@ import java.util.UUID;
 public class ChatController {
 
     private final ChatService chatService;
+    private final MessageService messageService;
 
     @PostMapping("/c")
     public ResponseEntity<NewChatResponse> createNewChat(
@@ -34,5 +39,25 @@ public class ChatController {
             @RequestBody ChatRequest chatRequest,
             @AuthenticationPrincipal User user){
         return new ResponseEntity<>(chatService.getChatResponse(chatId, chatRequest, user), HttpStatus.OK);
+    }
+
+
+    @GetMapping("/get-chats")
+    public ResponseEntity<Page<PageChat>> getUserChats(
+            @RequestParam(value = "p", required = false, defaultValue = "0") int pageNumber,
+            @RequestParam(value = "s", required = false, defaultValue = "5") int pageSize,
+            @AuthenticationPrincipal User user
+    ){
+        return new ResponseEntity<>(chatService.getPageableUserChats(pageNumber, pageSize, user), HttpStatus.OK);
+    }
+
+    @GetMapping("/get/chat-messages/{chatId}")
+    public ResponseEntity<List<MessageResponse>> getChatMessages(
+            @RequestParam(value = "p", required = false, defaultValue = "0") int pageNumber,
+            @RequestParam(value = "s", required = false, defaultValue = "3") int pageSize,
+            @PathVariable UUID chatId,
+            @AuthenticationPrincipal User user
+    ){
+        return new ResponseEntity<>(chatService.getChatMessages(pageNumber, pageSize, chatId, user), HttpStatus.OK);
     }
 }

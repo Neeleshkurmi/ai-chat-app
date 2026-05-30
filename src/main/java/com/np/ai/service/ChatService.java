@@ -1,9 +1,6 @@
 package com.np.ai.service;
 
-import com.np.ai.dto.ChatRequest;
-import com.np.ai.dto.ChatResponse;
-import com.np.ai.dto.MessageResponse;
-import com.np.ai.dto.NewChatResponse;
+import com.np.ai.dto.*;
 import com.np.ai.entity.Chat;
 import com.np.ai.entity.ChatMessage;
 import com.np.ai.entity.MessageRole;
@@ -14,8 +11,14 @@ import com.np.ai.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -27,6 +30,7 @@ public class ChatService {
     private final ChatRepository chatRepository;
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
+    private final MessageService messageService;
 
 
     public NewChatResponse createNewChat(ChatRequest chatRequest, User user) {
@@ -75,6 +79,7 @@ public class ChatService {
 
         MessageResponse messageResponse = new MessageResponse();
         messageResponse.setId(assistantMessage.getId());
+        messageResponse.setRole(messageResponse.getRole());
         messageResponse.setContent(assistantMessage.getContent());
 
         ChatResponse chatResponse = new ChatResponse();
@@ -84,4 +89,20 @@ public class ChatService {
         return chatResponse;
     }
 
+    public Page<PageChat> getPageableUserChats(int pageNumber, int pageSize, User user) {
+        if(user == null){
+            throw new RuntimeException("something wrong with security");
+        }
+        log.info("finding chats in repo");
+
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by("createdAt").descending());
+        Page<PageChat> chats = chatRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable);
+
+        log.info("got the paginated chats");
+        return chats;
+    }
+
+    public List<MessageResponse> getChatMessages(int pageNumber, int pageSize, UUID chatId, User user) {
+        return messageService.getChatMessages(pageNumber, pageSize, chatId, user);
+    }
 }
