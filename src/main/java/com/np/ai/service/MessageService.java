@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,12 +29,8 @@ public class MessageService {
 
         List<MessageResponse> messages = new ArrayList<>();
 
-        for(ChatMessage chatMessage : messagePage){
-            MessageResponse messageResponse = new MessageResponse(
-                    chatMessage.getId(), chatMessage.getRole(), chatMessage.getContent()
-            );
-            messages.add(messageResponse);
-        }
-        return messages;
+        return messagePage.getContent().stream()
+                .map(msg -> new MessageResponse(msg.getId(), msg.getRole(), msg.getContent()))
+                .collect(Collectors.toList());
     }
 }

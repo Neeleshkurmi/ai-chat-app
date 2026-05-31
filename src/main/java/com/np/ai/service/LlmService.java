@@ -1,5 +1,6 @@
 package com.np.ai.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SafeGuardAdvisor;
@@ -16,8 +17,10 @@ import reactor.core.publisher.Flux;
 import javax.annotation.PostConstruct;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class LlmService {
 
     private final ChatClient geminiChatClient;
@@ -28,7 +31,7 @@ public class LlmService {
 
     private final ChatClient openAiChatClient;
 
-    private final ChatMemory chatMemory;
+    private final ChatMemoryServiceImpl chatMemory;
 
     @Value("classpath:/prompts/user-prompt.st")
     private Resource userPrompt;
@@ -52,7 +55,7 @@ public class LlmService {
     public LlmService(
             @Qualifier("geminiChatClient") ChatClient geminichatClient,
             @Qualifier("openAiChatClient") ChatClient openAiChatClient,
-            ChatMemory chatMemory, VectorStore vectorStore){
+            ChatMemoryServiceImpl chatMemory, VectorStore vectorStore){
         this.vectorStore = vectorStore;
         this.chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
         this.geminiChatClient = geminichatClient;
@@ -64,19 +67,31 @@ public class LlmService {
 
     public String getLLMResponse(String query, String chatId){
 
+        log.info("creating search request for similarity search.......");
+
         SearchRequest searchRequest = SearchRequest.builder()
+                .filterExpression("chatId == '"+ chatId + "'")
                 .topK(3)
                 .similarityThreshold(0.6)
                 .query(query)
                 .build();
 
+        log.info("search request creation successful");
+
         MessageChatMemoryAdvisor memoryAdvisor =
                 MessageChatMemoryAdvisor.builder(chatMemory)
                         .build();
 
+        log.info("getting data from data base for search request");
+
         List<Document> documents = vectorStore.similaritySearch(searchRequest);
         List<String> documentList = documents.stream().map(Document::getText).toList();
-        String contextData = String.join("\n\n", documentList);
+        String contextData = documents.stream()
+                .map(Document::getText)
+                .distinct()
+                .collect(Collectors.joining("\n\n"));
+
+        log.info("got the data from database");
 
         return openAiChatClient
                 .prompt()

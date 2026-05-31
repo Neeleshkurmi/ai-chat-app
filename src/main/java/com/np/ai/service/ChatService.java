@@ -9,6 +9,7 @@ import com.np.ai.ingestion.DataIngestion;
 import com.np.ai.repository.ChatRepository;
 import com.np.ai.repository.MessageRepository;
 import com.np.ai.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +62,8 @@ public class ChatService {
         return response;
     }
 
+
+    @Transactional
     public ChatResponse getChatResponse(UUID chatId, MultipartFile file, String chatRequest, User user) throws IOException {
 
         Chat chat = chatRepository.findById(chatId)
@@ -70,25 +73,29 @@ public class ChatService {
             dataIngestion.ingest(file, chatId);
         }
 
+        log.info("getting response from llm......");
         String response = llmService.getLLMResponse(chatRequest, chatId.toString());
 
-        ChatMessage userMessage = new ChatMessage();
-        userMessage.setRole(MessageRole.USER);
-        userMessage.setContent(chatRequest);
-        userMessage.setChat(chat);
-        messageRepository.save(userMessage);
+        log.info("successfully get the response from llm......");
 
-        ChatMessage assistantMessage = new ChatMessage();
-        assistantMessage.setRole(MessageRole.ASSISTANT);
-        assistantMessage.setContent(response);
-        assistantMessage.setChat(chat);
+//        ChatMessage userMessage = new ChatMessage();
+//        userMessage.setRole(MessageRole.USER);
+//        userMessage.setContent(chatRequest);
+//        userMessage.setChat(chat);
+//        messageRepository.save(userMessage);
 
-        ChatMessage savedMessage = messageRepository.save(assistantMessage);
+//        ChatMessage assistantMessage = new ChatMessage();
+//        assistantMessage.setRole(MessageRole.ASSISTANT);
+//        assistantMessage.setContent(response);
+//        assistantMessage.setChat(chat);
+
+        ChatMessage savedMessage = messageRepository.findTopByChatIdOrderByCreatedAtDesc(chatId)
+                .orElseThrow(()-> new RuntimeException("chat not found"));
 
         MessageResponse messageResponse = new MessageResponse();
-        messageResponse.setId(assistantMessage.getId());
+        messageResponse.setId(savedMessage.getId());
         messageResponse.setRole(messageResponse.getRole());
-        messageResponse.setContent(assistantMessage.getContent());
+        messageResponse.setContent(savedMessage.getContent());
 
         ChatResponse chatResponse = new ChatResponse();
         chatResponse.setChatId(chatId);

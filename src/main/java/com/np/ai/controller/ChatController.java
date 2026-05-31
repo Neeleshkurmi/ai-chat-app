@@ -1,16 +1,13 @@
 package com.np.ai.controller;
 
 import com.np.ai.dto.*;
-import com.np.ai.entity.Chat;
 import com.np.ai.entity.User;
 import com.np.ai.service.ChatService;
 import com.np.ai.service.MessageService;
-import jakarta.websocket.server.PathParam;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +20,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/chat")
 @RequiredArgsConstructor
+@Slf4j
 public class ChatController {
 
     private final ChatService chatService;
@@ -59,10 +57,11 @@ public class ChatController {
     @GetMapping("/get/chat-messages/{chatId}")
     public ResponseEntity<List<MessageResponse>> getChatMessages(
             @RequestParam(value = "p", required = false, defaultValue = "0") int pageNumber,
-            @RequestParam(value = "s", required = false, defaultValue = "3") int pageSize,
+            @RequestParam(value = "s", required = false, defaultValue = "5") int pageSize,
             @PathVariable UUID chatId,
             @AuthenticationPrincipal User user
     ){
+        log.info("received parms: p = "+pageNumber+ ", s = " + pageSize);
         return new ResponseEntity<>(chatService.getChatMessages(pageNumber, pageSize, chatId, user), HttpStatus.OK);
     }
 }

@@ -32,7 +32,7 @@ public class DataIngestion {
             "pdf", "docx", "txt", "java", "py", "js", "ts"
     );
 
-    public int ingest(MultipartFile file, UUID chatId) throws IOException {
+    public void ingest(MultipartFile file, UUID chatId) throws IOException {
         log.info("ingestion method called.....");
 
         String ext = getExtension(file);
@@ -45,8 +45,14 @@ public class DataIngestion {
 
         List<Document> chunks = splitter.apply(docs);
 
-        chunks.forEach(d -> d.getMetadata().putAll(Map.of(
-                "chatId", chatId,
+        chunks.forEach(chunk -> {
+            log.info("metadata : {}", chunk.getMetadata());
+        });
+
+        chunks.forEach(
+                d -> d.getMetadata().putAll(Map.of(
+
+                "chatId", chatId.toString(),
                 "filename", getSafeFileName(file),
                 "type", ext
         )));
@@ -55,7 +61,6 @@ public class DataIngestion {
         vectorStore.add(chunks);
 
         log.info("ingestion successful");
-        return chunks.size();
     }
 
     public List<Document> readCodeFile(MultipartFile file, String chatId) throws IOException {

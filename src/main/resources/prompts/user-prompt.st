@@ -1,2 +1,1 @@
-USER QUERY:
-{query}
+USER QUERY: {query}
